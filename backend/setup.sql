@@ -14,7 +14,6 @@ CREATE TABLE IF NOT EXISTS users (
     last_login DATETIME,
     gender BOOLEAN,
     birth_date DATE,
-    preferred_language ENUM('en', 'hu') DEFAULT 'en' NOT NULL,
     type ENUM('unverified', 'verified', 'admin', 'superadmin') DEFAULT 'unverified' NOT NULL,
 
     CONSTRAINT EM CHECK (LOWER(email) = email COLLATE utf8_hungarian_ci),
@@ -70,7 +69,7 @@ CREATE TABLE IF NOT EXISTS bids (
     FOREIGN KEY (bidder_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
-CREATE TABLE messages (
+CREATE TABLE IF NOT EXISTS messages (
     id INT AUTO_INCREMENT PRIMARY KEY,
     type ENUM('report', 'inquiry') NOT NULL,
     user_id INT NOT NULL,
@@ -84,9 +83,26 @@ CREATE TABLE messages (
 );
 CREATE TABLE IF NOT EXISTS car_images (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    car_id INT NOT NULL,
+    car_id INT NOT NULL CHECK ((SELECT COUNT(*) FROM car_images WHERE car_id = car_id) < 50),
     file_path VARCHAR(255) NOT NULL,
     uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    title VARCHAR(150),
+    order_index INT DEFAULT 0 CHECK (order_index >= 0 AND order_index < 50),
     FOREIGN KEY (car_id) REFERENCES cars(id) ON DELETE CASCADE
+);
+/*
+CREATE TABLE IF NOT EXISTS password_resets (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    reset_token VARCHAR(255) NOT NULL UNIQUE,
+    expires_at DATETIME NOT NULL,
+    used BOOLEAN DEFAULT FALSE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+); */
+CREATE TABLE IF NOT EXISTS user_settings (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL UNIQUE,
+    dark_mode BOOLEAN DEFAULT FALSE,
+    language ENUM('en', 'hu') DEFAULT 'en' NOT NULL,
+    currency ENUM('EUR', 'HUF', 'USD') DEFAULT 'EUR' NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );

@@ -2,16 +2,46 @@ import msql from 'mysql2/promise';
 import express from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
-/* import multer from 'multer';
+import multer from 'multer';
 import fs from 'fs';
-import path from 'path'; */
+import path from 'path';
 
+const car_storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    const uploadPath = path.join(__dirname, 'uploads/cars');
+    cb(null, uploadPath);
+  },
+  filename: function (req, file, cb) {
+    const validExtensions = ['.png', '.jpg', '.jpeg', '.gif'];
+    const fileExtension = path.extname(file.originalname).toLowerCase();
+    if (!validExtensions.includes(fileExtension)) {
+      return cb(new Error('Invalid file type'));
+    }
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, uniqueSuffix + fileExtension);
+  }
+});
+const profile_pic_storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    const uploadPath = path.join(__dirname, 'uploads/profiles');
+    cb(null, uploadPath);
+  },
+  filename: function (req, file, cb) {
+    const validExtensions = ['.png', '.jpg', '.jpeg', '.gif'];
+    const fileExtension = path.extname(file.originalname).toLowerCase();
+    if (!validExtensions.includes(fileExtension)) {
+      return cb(new Error('Invalid file type'));
+    }
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, uniqueSuffix + fileExtension);
+  }
+});
 
-
-
+const profile_upload = multer({ profile_pic_storage });
+const car_upload = multer({ car_storage });
 dotenv.config();
 const app = express();
-const port = process.env.PORT || 3550;
+const port = 3550;
 
 app.use(cors());
 app.use(express.json());
@@ -27,19 +57,20 @@ const dbConfig = {
 app.dbConfig = dbConfig;
 app.db = msql.createPool(dbConfig);
 
-app.post('/register', async (req, res) => {
-  const { usertag, display_name, password_hash, email, fullname, mobile, gender, birth_date, preferred_language } = req.body;
-  if (typeof req.body !== 'object' || req.body === null || Object.keys(req.body).length != 9) {
+app.post('/register', profile_upload.single('profile_picture'), async (req, res) => {
+  const { usertag, display_name, password_hash, email, fullname, mobile, gender} = req.body;
+  const birth_date = new Date(req.body.birth_date);
+  const profile_picture = req.file;
+  const conn = await app.db.getConnection();
+
+  if (typeof req.body !== 'object' || req.body === null || Object.keys(req.body).length != 8) {
     return res.status(400).json({ error: 'Invalid request body' });
   }
-  else if (!usertag || !display_name || !password_hash || !email || !fullname || !mobile || !gender || !birth_date || !preferred_language) {
+  else if (!usertag || !display_name || !password_hash || !email || !fullname || !mobile || !gender || !birth_date) {
     return res.status(400).json({ error: 'Missing required fields' });
   }
-  else if (typeof usertag !== 'string' || typeof display_name !== 'string' || typeof password_hash !== 'string' || typeof email !== 'string' || typeof fullname !== 'string' || typeof mobile !== 'string' || typeof gender !== 'boolean' || !(birth_date instanceof Date) || typeof preferred_language !== 'string') {
+  else if (typeof usertag !== 'string' || typeof display_name !== 'string' || typeof password_hash !== 'string' || typeof email !== 'string' || typeof fullname !== 'string' || typeof mobile !== 'string' || typeof gender !== 'boolean' || !(birth_date instanceof Date)) {
     return res.status(400).json({ error: 'Invalid field types' });
-  }
-  else if (typeof preferred_language !== 'string' || preferred_language.length === 0 || preferred_language.length > 3 ) {
-    return res.status(400).json({ error: 'Invalid Preferred Language' });
   }
   else if (await app.db.query('SELECT id FROM users WHERE usertag = ?', [usertag]).then(([rows]) => rows.length > 0)) {
     return res.status(409).json({ error: 'Usertag already in use' });
@@ -54,81 +85,109 @@ app.post('/register', async (req, res) => {
   else {
     try {
       const [result] = await app.db.query(
-        'INSERT INTO users (usertag, display_name, password_hash, email, fullname, mobile, gender, birth_date, preferred_language) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-        [usertag, display_name, password_hash, email, fullname, mobile, gender, birth_date, preferred_language]
+        'INSERT INTO users (usertag, display_name, password_hash, email, fullname, mobile, gender, birth_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+        [usertag, display_name, password_hash, email, fullname, mobile, gender, birth_date]
       );
-      if (preferred_language)
+      await conn.commit();
+      await conn.release();
       return res.status(201).json({ message: 'User registered successfully', userId: result.insertId });
     } catch (error) {
       console.error('Error registering user:', error);
+      await conn.rollback();
+      await conn.release();
       return res.status(500).json({ error: 'Internal server error' });
     }
   }
 });
 
-app.get('/login', async (req, res) => {
+app.post('/login', async (req, res) => {
   const { usertag, email, password_hash } = req.body;
-  if (Object.keys(req.body).length != 2) {
+  const conn = await app.db.getConnection();
+  if (typeof req.body !== 'object' || req.body === null ) {
+    conn.release();
     return res.status(400).json({ error: 'Invalid request body' });
   }
-  else if (!usertag || !email) {
-    return res.status(400).json({ error: 'Missing usertag or email' });
+  else if (Object.keys(req.body).length != 2) {
+    conn.release();
+    return res.status(400).json({ error: 'Invalid request body' });
   }
-
   else if (!password_hash) {
+    conn.release();
     return res.status(400).json({ error: 'Missing password_hash' });
   }
-  else if (typeof usertag !== 'string' || typeof email !== 'string' || typeof password_hash !== 'string') {
-    return res.status(400).json({ error: 'Invalid field types' });
+  else if (typeof password_hash !== 'string') {
+    conn.release();
+    return res.status(400).json({ error: 'Invalid Password' });
   }
-  else if (usertag) {
-    const [rows] = await app.db.query('SELECT * FROM users WHERE usertag = ? AND password_hash = ?', [usertag, password_hash]);
-    if (rows.length === 0) {
-      return res.status(401).json({ error: 'Invalid usertag or password' });
-    }
-    return res.status(200).json({ message: 'Login successful', user: rows[0] });
+  else if ((!usertag && !email) || (usertag && email)) {
+    conn.release();
+    return res.status(400).json({ error: 'Provide either usertag or email' });
   }
-  else if (email) {
-    const [rows] = await app.db.query('SELECT * FROM users WHERE email = ? AND password_hash = ?', [email, password_hash]);
-    if (rows.length === 0) {
-      return res.status(401).json({ error: 'Invalid email or password' });
+  else if ((usertag && typeof usertag !== 'string') && (email && typeof email !== 'string')) {
+    conn.release();
+    return res.status(400).json({ error: 'Invalid usertag or email' });
+  }
+  else {
+    try {
+      const [rows] = await app.db.query(
+        'SELECT id, usertag, display_name, email FROM users WHERE (usertag = ? OR email = ?) AND password_hash = ?',
+        [usertag, email, password_hash]
+      );
+      conn.release();
+      if (rows.length === 0) {
+        return res.status(401).json({ error: 'Invalid credentials' });
+      }
+      return res.status(200).json({ message: 'Login successful', user: rows[0] });
+    } catch (error) {
+      console.error('Error during login:', error);
+      conn.release();
+      return res.status(500).json({ error: 'Internal server error' });
     }
-    return res.status(200).json({ message: 'Login successful', user: rows[0] });
   }
 });
 app.get('/auctions', async (req, res) => {
+  const conn = await app.db.getConnection();
   try {
     const [auction_rows] = await app.db.query('SELECT * FROM auctions');
     const [car_rows] = await app.db.query('SELECT * FROM cars');
+    conn.release();
     return res.status(200).json({ auctions: auction_rows, cars: car_rows });
   }
   catch (error) {
     console.error('Error fetching auctions:', error);
+    conn.release();
     return res.status(500).json({ error: 'Internal server error' });
   }
 });
 app.get('/auction/:id', async (req, res) => {
+  const conn = await app.db.getConnection();
   const auctionId = req.params.id;
   if (!auctionId) {
+    conn.release();
     return res.status(400).json({ error: 'Missing auction ID' });
   }
   else if (isNaN(auctionId)) {
+    conn.release();
     return res.status(400).json({ error: 'Invalid auction ID' });
   }
   try {
     const [auction_rows] = await app.db.query('SELECT * FROM auctions WHERE id = ?', [auctionId]);
     const [car_rows] = await app.db.query('SELECT * FROM cars WHERE auction_id = ?', [auctionId]);
     if (auction_rows.length === 0) {
+      conn.release();
       return res.status(404).json({ error: 'Auction not found' });
     }
+    conn.release();
     return res.status(200).json({ auction: auction_rows[0], car: car_rows[0] });
   }
   catch (error) {
     console.error('Error fetching auction:', error);
+    conn.release();
     return res.status(500).json({ error: 'Internal server error' });
   }
 });
-app.post('/cars', async (req, res) => {
+app.post('/cars', car_upload.fields([{ name: 'car_images', maxCount: 50 }]), async (req, res) => {
+  const conn = await app.db.getConnection();
   const {
     manufacturer,
     model,
@@ -151,47 +210,70 @@ app.post('/cars', async (req, res) => {
     utility_features,
     safety_features,
     factoryExtras,
-    owner_id
+    owner_id,
+    car_images,
+    order_indexes
   } = req.body;
   if (typeof req.body !== 'object' || req.body === null || Object.keys(req.body).length != 22) {
+    conn.release();
     return res.status(400).json({ error: 'Invalid request body' });
   }
-  else if (!manufacturer || !model || !odometerKM || !model_year || !efficiencyHP || !efficiencyKW || !engine_capacityCC || !fuel_type || !emissionsGKM || !transmission || !body_type || !color || !doors || !seats || !vin || !max_speedKMH || !zeroToHundredSec || !weightKG || !utility_features || !safety_features || !factoryExtras || !owner_id) {
+  else if (!manufacturer || !model || !odometerKM || !model_year || !efficiencyHP || !efficiencyKW || !engine_capacityCC || !fuel_type || !emissionsGKM || !transmission || !body_type || !color || !doors || !seats || !vin || !max_speedKMH || !zeroToHundredSec || !weightKG || !utility_features || !safety_features || !factoryExtras || !owner_id || !car_images || !order_indexes) {
+    conn.release();
     return res.status(400).json({ error: 'Missing required fields' });
   }
   else if (!manufacturer || manufacturer.length === 0 || typeof manufacturer !== 'string') {
+    conn.release();
     return res.status(400).json({ error: 'Invalid manufacturer' });
   }
   else if (!model || model.length === 0 || typeof model !== 'string') {
+    conn.release();
     return res.status(400).json({ error: 'Invalid model' });
   }
   else if (isNaN(odometerKM) || odometerKM < 0 || typeof odometerKM !== 'number' || odometerKM % 1 !== 0) {
+    conn.release();
     return res.status(400).json({ error: 'Invalid odometerKM' });
   }
   else if (isNaN(model_year) || model_year < 1900 || typeof model_year !== 'number' || model_year % 1 !== 0 || model_year > new Date().getFullYear() + 1) {
+    conn.release();
     return res.status(400).json({ error: 'Invalid model_year' });
   }
   else if (isNaN(engine_capacityCC) || engine_capacityCC <= 0 || typeof engine_capacityCC !== 'number' || engine_capacityCC % 1 !== 0) {
+    conn.release();
     return res.status(400).json({ error: 'Invalid engine_capacityCC' });
   }
   else if (!color || color.length === 0 || typeof color !== 'string') {
+    conn.release();
     return res.status(400).json({ error: 'Invalid color' });
   }
   else if (isNaN(doors) || doors <= 0 || typeof doors !== 'number' || doors % 1 !== 0 || doors > 7) {
+    conn.release();
     return res.status(400).json({ error: 'Invalid doors' });
   }
   else if (isNaN(seats) || seats <= 0 || typeof seats !== 'number' || seats % 1 !== 0 || seats > 9) {
+    conn.release();
     return res.status(400).json({ error: 'Invalid seats' });
   }
   else if (!vin || vin.length !== 17 || typeof vin !== 'string') {
+    conn.release();
     return res.status(400).json({ error: 'Invalid vin' });
   }
   else if (isNaN(owner_id) || owner_id <= 0 || typeof owner_id !== 'number' || owner_id % 1 !== 0) {
+    conn.release();
     return res.status(400).json({ error: 'Invalid owner_id' });
   }
+  else if (!req.files || !req.files['car_images'] || req.files['car_images'].length === 0) {
+    conn.release();
+    return res.status(400).json({ error: 'At least one car image is required' });
+  }
+  else if (Array.isArray(order_indexes) && order_indexes.length !== req.files['car_images'].length) {
+    conn.release();
+    return res.status(400).json({ error: 'Order indexes count must match car images count' });
+  }
   else {
+    const currentTime = new Date();
     try {
-      const [result] = await app.db.query(`INSERT INTO cars
+      const [carU] = await app.db.query(`INSERT INTO cars
         (manufacturer, model, odometerKM, model_year, efficiencyHP, efficiencyKW, 
         engine_capacityCC, fuel_type, emissionsGKM, transmission, body_type, color, doors, seats, vin, max_speedKMH, zeroToHundredSec, 
         weightKG, utility_features, safety_features, factoryExtras, owner_id)
@@ -200,39 +282,57 @@ app.post('/cars', async (req, res) => {
         fuel_type, emissionsGKM, transmission, body_type, color, doors, seats, vin, max_speedKMH, zeroToHundredSec, weightKG, 
         utility_features, safety_features, factoryExtras, owner_id]
       );
-      return res.status(201).json({ message: 'Car added successfully', carId: result.insertId });
+      for (let i = 0; i < req.files['car_images'].length; i++) {
+        const file = req.files['car_images'][i];
+        const order_index = Array.isArray(order_indexes) ? parseInt(order_indexes[i], 10) : parseInt(order_indexes, 10);
+        await app.db.query(`INSERT INTO car_images (car_id, file_path, order_index, uploaded_at) VALUES (?, ?, ?, ?)`,
+          [carU.insertId, file.path, order_index, currentTime]
+        );
+      }
+      conn.release();
+      return res.status(201).json({ message: 'Car added successfully', carId: carU.insertId });
     }
     catch (error) {
       console.error('Error adding car:', error);
+      conn.release();
       return res.status(500).json({ error: 'Internal server error' });
     }
   }
 });
 app.post('/auctions', async (req, res) => {
+  const conn = await app.db.getConnection();
   const { car_id, starting_price, reserve_price, start_time, end_time, status } = req.body;
 
   if (typeof req.body !== 'object' || req.body === null || Object.keys(req.body).length !== 6) {
+    conn.release();
     return res.status(400).json({ error: 'Invalid request body' });
   }
   else if (!car_id || !starting_price || !start_time || !end_time || !status) {
+    conn.release();
     return res.status(400).json({ error: 'Missing required fields' });
   }
   else if (isNaN(car_id) || car_id <= 0 || typeof car_id !== 'number' || car_id % 1 !== 0) {
+    conn.release();
     return res.status(400).json({ error: 'Invalid car_id' });
   }
   else if (isNaN(starting_price) || starting_price < 0 || typeof starting_price !== 'number') {
+    conn.release();
     return res.status(400).json({ error: 'Invalid starting_price' });
   }
   else if (reserve_price && (isNaN(reserve_price) || reserve_price < 0 || typeof reserve_price !== 'number')) {
+    conn.release();
     return res.status(400).json({ error: 'Invalid reserve_price' });
   }
   else if (!start_time || isNaN(new Date(start_time).getTime())) {
+    conn.release();
     return res.status(400).json({ error: 'Invalid start_time' });
   }
   else if (!end_time || isNaN(new Date(end_time).getTime())) {
+    conn.release();
     return res.status(400).json({ error: 'Invalid end_time' });
   }
   else if (!['upcoming', 'active', 'completed', 'cancelled'].includes(status)) {
+    conn.release();
     return res.status(400).json({ error: 'Invalid status' });
   }
   else {
@@ -242,10 +342,12 @@ app.post('/auctions', async (req, res) => {
         VALUES (?, ?, ?, ?, ?, ?)`,
         [car_id, starting_price, reserve_price, start_time, end_time, status]
       );
+      conn.release();
       return res.status(201).json({ message: 'Auction created successfully', auctionId: result.insertId });
     }
     catch (error) {
       console.error('Error creating auction:', error);
+      conn.release();
       return res.status(500).json({ error: 'Internal server error' });
     }
   }
