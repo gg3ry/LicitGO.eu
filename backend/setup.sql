@@ -89,7 +89,7 @@ CREATE TABLE IF NOT EXISTS car_images (
     order_index INT DEFAULT 0 CHECK (order_index >= 0 AND order_index < 50),
     FOREIGN KEY (car_id) REFERENCES cars(id) ON DELETE CASCADE
 );
-/*
+
 CREATE TABLE IF NOT EXISTS password_resets (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
@@ -97,7 +97,7 @@ CREATE TABLE IF NOT EXISTS password_resets (
     expires_at DATETIME NOT NULL,
     used BOOLEAN DEFAULT FALSE,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-); */
+);
 CREATE TABLE IF NOT EXISTS user_settings (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL UNIQUE,
@@ -106,3 +106,44 @@ CREATE TABLE IF NOT EXISTS user_settings (
     currency ENUM('EUR', 'HUF', 'USD') DEFAULT 'EUR' NOT NULL,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
+CREATE TABLE IF NOT EXISTS global_settings (
+    id INT PRIMARY KEY CHECK (id = 1),
+    site_maintenance_mode BOOLEAN DEFAULT FALSE,
+    default_language ENUM('en', 'hu') DEFAULT 'en' NOT NULL,
+    default_currency ENUM('EUR', 'HUF', 'USD') DEFAULT 'EUR' NOT NULL,
+    max_auction_duration_days INT DEFAULT 30,
+    min_starting_price DECIMAL(10, 2) DEFAULT 100.00
+);
+CREATE TABLE IF NOT EXISTS logs (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT,
+    action_type ENUM('login', 'logout', 'bid_placed', 'auction_created', 'auction_cancelled',
+    'user_registered', 'password_reset', 'message_sent', 'admin_action', 'super_admin_action',
+    'global_settings_updated') NOT NULL,
+    action_details TEXT,
+    action_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS sessions (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    session_token VARCHAR(255) NOT NULL UNIQUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    expires_at DATETIME NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+CREATE TABLE IF NOT EXISTS authentication (
+    user_id INT PRIMARY KEY,
+    two_factor_enabled BOOLEAN DEFAULT FALSE,
+    two_factor_secret VARCHAR(255),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+CREATE TABLE IF NOT EXISTS backup_keys (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    backup_key TEXT NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+INSERT INTO users (usertag, display_name, password_hash, email, fullname, mobile, type)
+VALUES ( /* placeholder for user data */, 'superadmin');
