@@ -1,0 +1,21 @@
+1. feladat
+Hozz létre egy adatbázist hazi_feladat néven
+Legyen benne egy users tábla
+id AI PK
+username
+password
+email
+address
+phone_number
+2. feladat
+Kapcsolódj az adatbázishoz
+Backend-en készíts kettő végpontot, regUser, logUser
+Tartalmazzon kettő ellenőrzést mind a kettő
+3. feladat
+Készíts egy navbart, legyen egy kezdőlapja, ahol kiírja, hogy kezdőlap
+Legyen egy regisztráció fül, ahol regisztrálni lehet
+Legyen egy bejelentkezés fül, bejelentkezés után, egy kezdőlap, egy profile és egy kijelentkezés
+fül jelenjen meg
+Kijelentkezés gombbal léptessen ki és jelenjen meg az alap navbar
+Bootstrap kötelező
+Legyen szép!
