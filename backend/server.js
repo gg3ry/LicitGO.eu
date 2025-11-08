@@ -488,6 +488,10 @@ app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({ error: 'Valami hiba történt!' });
 });
+app._router.use((err, req, res, next) => {
+  console.error('Unhandled error:', err);
+  res.status(500).json({ error: 'Internal server error' });
+});
 app.listen(port, () => {
   console.log(`Szerver fut a ${port} porton.`);
 });
