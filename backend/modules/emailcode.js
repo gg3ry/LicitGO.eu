@@ -1,6 +1,5 @@
 import mailer from "nodemailer";
-import dotenv from "dotenv";
-dotenv.config({ path: "EmailConfig.env" });
+import { sendEmail } from "./utilities.js";
 async function sendVerificationEmail(email, userId, type) {
   function random_code() {
     const min = 100000;
@@ -22,77 +21,34 @@ async function sendVerificationEmail(email, userId, type) {
   }
   await createEmailCode();
   if (type == "password_reset") {
-    const nodemailer = mailer.createTransport({
-      host: process.env.EMAIL_HOST,
-      port: process.env.EMAIL_PORT,
-      secure: false,
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-      },
-    });
-    const mailOptions = {
-      from: '"LicitGO.eu" <no-reply@licitgo.eu>',
-      to: email,
-      subject: "Jelszó visszaállítás",
-      html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #ddd; padding: 20px; border-radius: 8px;">
-              <h2 style="color: #d9534f;">Jelszó visszaállítási kérelem</h2>
-              <p style="color: #555;">Kérés érkezett a fiókjához tartozó jelszó visszaállítására. Kérjük, használja az alábbi kódot a folytatáshoz:</p>
-              
-              <div style="background-color: #f9f9f9; padding: 15px; text-align: center; border: 1px solid #eee; border-radius: 4px; margin: 20px 0;">
-                  <strong style="font-size: 24px; color: #d9534f; letter-spacing: 2px;">${code}</strong>
-              </div>
-              
-              <p style="color: #555;">**Figyelem:** Ez a kód **10 percig** érvényes. Ha nem Ön kezdeményezte a jelszó visszaállítást, kérjük, hagyja figyelmen kívül ezt az e-mailt.</p>
-              
-              <a 
-                href="https://licitgo.eu/password-reset" 
-                style="display: inline-block; padding: 10px 20px; background-color: #007bff; color: white; text-decoration: none; border-radius: 5px; margin-top: 15px;"
-              >
-                Jelszó visszaállítása
-              </a>
-
-              <p style="color: #888; font-size: 12px; margin-top: 30px;">Üdvözlettel,<br>A LicitGO.eu Csapat</p>
+    const htmlMessage = `
+      <div class="email-container">
+          <h2 class="email-header">Jelszó visszaállítása</h2>
+          <p class="email-content">Kérjük, használja az alábbi kódot jelszava visszaállításához:</p>
+          <div class="code-box">
+              <strong>${code}</strong>
           </div>
-          `,
-    };
-    await nodemailer.sendMail(mailOptions);
+          <p><b>Figyelem:</b> Ez a kód <i>10 percig</i> érvényes. Kérjük, ne ossza meg ezt a kódot másokkal.</p>
+          <a href="https://licitgo.eu/reset-password" class="email-button">Jelszó visszaállítása</a>
+          <p class="email-footer">Üdvözlettel,<br>A LicitGO.eu Csapat</p>
+      </div>
+      `;
+    await sendEmail( email, "Jelszó visszaállítá", htmlMessage );
   }
   if (type == "verification") {
-    const nodemailer = mailer.createTransport({
-      host: process.env.EMAIL_HOST,
-      port: process.env.EMAIL_PORT,
-      secure: false,
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-      },
-    });
-    const mailOptions = {
-      from: '"LicitGO.eu" <no-reply@licitgo.eu>',
-      to: email,
-      subject: "Regisztráció megerősítése",
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #ddd; padding: 20px; border-radius: 8px;">
-          <h2 style="color: #333;">Tisztelt Felhasználó!</h2>
-          <p style="color: #555;">Köszönjük, hogy regisztrált a LicitGO.eu oldalán. A regisztráció véglegesítéséhez szükséges kód:</p>
-          
-          <div style="background-color: #f9f9f9; padding: 15px; text-align: center; border: 1px solid #eee; border-radius: 4px; margin: 20px 0;">
-              <strong style="font-size: 24px; color: #007bff; letter-spacing: 2px;">${code}</strong>
+    const htmlMessage = `
+      <div class="email-container">
+          <h2 class="email-header">Fiók megerősítése</h2>
+          <p class="email-content">Köszönjük, hogy regisztrált a LicitGO.eu oldalra! Kérjük, használja az alábbi kódot fiókja megerősítéséhez:</p>
+          <div class="code-box">
+              <strong>${code}</strong>
           </div>
-          
-          <p style="color: #555;">Ez a kód 10 percig érvényes. Kérjük, adja meg a weboldalon a fiókja aktiválásához.</p>
-          
-          <a href="https://licitgo.eu" style="display: inline-block; padding: 10px 20px; background-color: #007bff; color: white; text-decoration: none; border-radius: 5px; margin-top: 15px;">
-            LicitGO.eu megnyitása
-          </a>
-
-          <p style="color: #888; font-size: 12px; margin-top: 30px;">Üdvözlettel,<br>A LicitGO.eu Csapat</p>
-    </div>
-    `,
-    };
-    await nodemailer.sendMail(mailOptions);
+          <p><b>Figyelem:</b> Ez a kód <i>10 percig</i> érvényes. Kérjük, ne ossza meg ezt a kódot másokkal.</p>
+          <a href="https://licitgo.eu/verify-account" class="email-button">Fiók megerősítése</a>
+          <p class="email-footer">Üdvözlettel,<br>A LicitGO.eu Csapat</p>
+      </div>
+      `;
+    await sendEmail( email, "Fiók megerősítés", htmlMessage );
   }
 }
 export { sendVerificationEmail };

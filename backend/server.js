@@ -7,9 +7,10 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import cron from 'node-cron';
-import { Exchanges } from 'modules/getExhangeRates.js';
-import { GetloginHU, GetauctionsHU, GetauctionsByIdHU, GetMyProfileHU } from 'modules/HU/apiGET.js'
-import { PostCarHU, PostAuctionHU, PostBidHU, RegisterHU, ResetPassword, PasstempcodeHU } from 'modules/HU/apiPOST.js';
+// import * as OTPAuth from "otpauth";
+import { Exchanges } from 'modules/utilities.js';
+import { GetloginHU, GetauctionsHU, GetauctionsByIdHU, GetMyProfileHU, VerifyEmailCode } from 'modules/apiGET.js';
+import { PostCarHU, PostAuctionHU, PostBidHU, RegisterHU, ResetPassword, PasstempcodeHU } from 'modules/apiPOST.js';
 //#endregion
 //#region Setups
 const car_storage = multer.diskStorage({
@@ -70,19 +71,20 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.dbConfig = dbConfig;
 app.db = msql.createPool(dbConfig);
 //#endregion
-//#region HUPost Endpoints
-app.post('/hu/register', profile_upload.single('profile_picture'), RegisterHU(req, res));
-app.post('/hu/reset-password', ResetPassword(req, res));
-app.post('/hu/passwordemailcode', PasstempcodeHU(req, res));
-app.post('/hu/cars', car_upload.fields([{ name: 'car_images', maxCount: 50 }]), PostCarHU(req, res));
-app.post('/hu/auctions', PostAuctionHU(req, res));
-app.post('/hu/bids', PostBidHU(req, res));
+//#region Post Endpoints
+app.post('/register', profile_upload.single('profile_picture'), RegisterHU(req, res));
+app.post('/reset-password', ResetPassword(req, res));
+app.post('/passwordemailcode', PasstempcodeHU(req, res));
+app.post('/cars', car_upload.fields([{ name: 'car_images', maxCount: 50 }]), PostCarHU(req, res));
+app.post('/auctions', PostAuctionHU(req, res));
+app.post('/bids', PostBidHU(req, res));
 //#endregion
 //#region HUGet Endpoints
-app.get('/hu/login', GetloginHU(req, res));
-app.get('/hu/auctions', GetauctionsHU(req, res));
-app.get('/hu/auction/:id', GetauctionsByIdHU(req, res));
-app.get('/hu/myprofile', GetMyProfileHU(req, res));
+app.get('/login', GetloginHU(req, res));
+app.get('/auctions', GetauctionsHU(req, res));
+app.get('/auction/:id', GetauctionsByIdHU(req, res));
+app.get('/myprofile', GetMyProfileHU(req, res));
+app.get('/verifycode', VerifyEmailCode(req, res));
 //#endregion
 //#region Error Handling
 app.use((req, res) => {
@@ -114,32 +116,23 @@ app.listen(port, () => {
 //#region Scheduled Tasks
 cron.schedule('0 6 * * *', async () => {
   try {
-    console.log('Napi árfolyam lekérés indul...');
-    const pairs = [
-      ['EUR', 'HUF'],
-      ['EUR', 'USD'],
-      ['USD', 'HUF']
-    ];
-
-    for (const [base, target] of pairs) {
-      const rate = await Exchanges(base, target);
-      if (rate !== null) {
-        await app.db.query(
-          'INSERT INTO exchange_rates (base_currency, target_currency, rate) VALUES (?, ?, ?)',
-          [base, target, rate]
-        );
-        console.log(`Mentve: ${base} -> ${target} = ${rate}`);
-      } else {
-        console.warn(`Nem sikerült lekérni: ${base} -> ${target}`);
-      }
+    const exchangeRates = await Exchanges('EUR', 'USD');
+    const hufToUsdRate = await Exchanges('HUF', 'USD');
+    const hufToEurRate = await Exchanges('HUF', 'EUR');
+    if (exchangeRates && hufToUsdRate && hufToEurRate) {
+      await app.db.query(
+        'INSERT INTO exchange_rates (eur_to_usd, huf_to_usd, huf_to_eur, date) VALUES (?, ?, ?, CURDATE())',
+        [exchangeRates, hufToUsdRate, hufToEurRate]
+      );
+      console.log('Exchange rates updated successfully.');
     }
-    console.log('Napi árfolyam lekérés befejezve.');
   } catch (err) {
-    console.error('Hiba a napi árfolyam lekérés során:', err);
+    console.error('Error during exchange rate update:', err);
   }
 });
 // Daily midnight summary logs: write a file with all actions from the previous day
 cron.schedule('0 0 * * *', async () => {
+  console.clear();
   try {
     const now = new Date();
     const yesterday = new Date(now);

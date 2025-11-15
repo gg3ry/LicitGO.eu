@@ -15,16 +15,18 @@ CREATE TABLE IF NOT EXISTS users (
     last_login DATETIME,
     gender BOOLEAN,
     birth_date DATE,
-    type ENUM('unverified', 'verified', 'admin', 'superadmin') DEFAULT 'unverified' NOT NULL,
+    type ENUM('unverified', 'verified', 'admin', 'superadmin', 'suspended') DEFAULT 'unverified' NOT NULL,
 
     CONSTRAINT EM CHECK (LOWER(email) = email COLLATE utf8_hungarian_ci),
     CONSTRAINT UT CHECK (LOWER(usertag) = usertag COLLATE utf8_hungarian_ci)
 );
+
 CREATE TABLE IF NOT EXISTS profile_pictures (
     user_id INT NOT NULL UNIQUE PRIMARY KEY,
     file_name VARCHAR(255) NOT NULL,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
+
 CREATE TABLE IF NOT EXISTS cars (
     id INT AUTO_INCREMENT PRIMARY KEY,
     manufacturer VARCHAR(100) NOT NULL,
@@ -51,32 +53,25 @@ CREATE TABLE IF NOT EXISTS cars (
     owner_id INT,
     FOREIGN KEY (owner_id) REFERENCES users(id) ON DELETE CASCADE
 );
-CREATE TABLE IF NOT EXISTS api_keys (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT NOT NULL,
-    api_key VARCHAR(255) NOT NULL UNIQUE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    expires_at DATETIME DEFAULT DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 90 DAY),
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-);
+
 CREATE TABLE IF NOT EXISTS auctions (
     id INT AUTO_INCREMENT PRIMARY KEY,
     car_id INT NOT NULL UNIQUE,
-    starting_price DECIMAL(10, 2) NOT NULL,
-    reserve_price DECIMAL(10, 2),
+    starting_priceUSD DECIMAL(10, 2) NOT NULL,
+    reserve_priceUSD DECIMAL(10, 2),
     start_time DATETIME NOT NULL,
     end_time DATETIME NOT NULL,
     status ENUM('upcoming', 'active', 'completed', 'cancelled') DEFAULT 'upcoming' NOT NULL,
     winner_id INT,
-    final_price DECIMAL(10, 2),
     FOREIGN KEY (car_id) REFERENCES cars(id) ON DELETE CASCADE,
     FOREIGN KEY (winner_id) REFERENCES users(id) ON DELETE SET NULL
 );
+
 CREATE TABLE IF NOT EXISTS bids (
     id INT AUTO_INCREMENT PRIMARY KEY,
     auction_id INT NOT NULL,
     bidder_id INT NOT NULL,
-    bid_amount DECIMAL(10, 2) NOT NULL,
+    bid_amountUSD DECIMAL(10, 2) NOT NULL,
     bid_time DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (auction_id) REFERENCES auctions(id) ON DELETE CASCADE,
     FOREIGN KEY (bidder_id) REFERENCES users(id) ON DELETE CASCADE
@@ -94,9 +89,10 @@ CREATE TABLE IF NOT EXISTS messages (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (adminID) REFERENCES users(id) ON DELETE CASCADE
 );
+
 CREATE TABLE IF NOT EXISTS car_images (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    car_id INT NOT NULL CHECK ((SELECT COUNT(*) FROM car_images WHERE car_id = car_id) < 50),
+    car_id INT NOT NULL,
     file_path VARCHAR(255) NOT NULL,
     uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     order_index INT DEFAULT 0 CHECK (order_index >= 0 AND order_index < 50),
@@ -112,18 +108,20 @@ CREATE TABLE IF NOT EXISTS email_codes (
     used BOOLEAN DEFAULT FALSE,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
+
 CREATE TABLE IF NOT EXISTS user_settings (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL UNIQUE,
     dark_mode BOOLEAN DEFAULT FALSE,
-    language ENUM('en', 'hu') DEFAULT 'en' NOT NULL,
+    language ENUM('EN', 'HU') DEFAULT 'EN' NOT NULL,
     currency ENUM('EUR', 'HUF', 'USD') DEFAULT 'EUR' NOT NULL,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
+
 CREATE TABLE IF NOT EXISTS global_settings (
     id INT PRIMARY KEY CHECK (id = 1),
     site_maintenance_mode BOOLEAN DEFAULT FALSE,
-    default_language ENUM('en', 'hu') DEFAULT 'en' NOT NULL,
+    default_language ENUM('EN', 'HU') DEFAULT 'EN' NOT NULL,
     default_currency ENUM('EUR', 'HUF', 'USD') DEFAULT 'EUR' NOT NULL,
     max_auction_duration_days INT DEFAULT 30,
     min_starting_price DECIMAL(10, 2) DEFAULT 100.00
@@ -137,11 +135,12 @@ CREATE TABLE IF NOT EXISTS sessions (
     expires_at DATETIME NOT NULL,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
+
 CREATE TABLE IF NOT EXISTS logs (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT,
     session_token VARCHAR(255),
-    action_type ENUM('login', 'logout', 'bid_placed', 'auction_created', 'auction_cancelled',
+    action_type ENUM('login', 'logout', 'account_created', 'bid_placed', 'auction_created', 'auction_cancelled',
     'car_added', 'car_updated', 'user_registered', 'password_reset', 'message_sent', 'admin_action',
     'super_admin_action', 'global_settings_updated') NOT NULL,
     action_details TEXT,
@@ -149,26 +148,31 @@ CREATE TABLE IF NOT EXISTS logs (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
     FOREIGN KEY (session_token) REFERENCES sessions(session_token) ON DELETE SET NULL
 );
+
 CREATE TABLE IF NOT EXISTS authentication (
     user_id INT PRIMARY KEY,
     two_factor_enabled BOOLEAN DEFAULT FALSE,
     two_factor_secret VARCHAR(255),
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
+
 CREATE TABLE IF NOT EXISTS backup_keys (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
     backup_key TEXT NOT NULL,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
+
 CREATE TABLE IF NOT EXISTS exchange_rates (
         id INT AUTO_INCREMENT PRIMARY KEY,
-        base_currency VARCHAR(8),
-        target_currency VARCHAR(8),
-        rate DECIMAL(18,8),
+        eur_to_usd DECIMAL(10, 6) NOT NULL,
+        huf_to_usd DECIMAL(10, 6) NOT NULL,
+        huf_to_eur DECIMAL(10, 6) NOT NULL,
+        date DATE NOT NULL,
         fetched_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+/*
 INSERT INTO users (usertag, display_name, password_hash, email, fullname, mobile, type)
-VALUES ( /* placeholder for user data */, 'superadmin');
-INSERT INTO api_keys (user_id, api_key)
-VALUES (1, /* placeholder for API key */);
+VALUES ( placeholder for user data, 'superadmin');
+*/
