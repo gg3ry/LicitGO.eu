@@ -2,6 +2,7 @@ import HandleStatus from "../lang/HandleStatus.js";
 import UseDB from "../db/UseDB.js";
 
 export default function HandleErrorMiddleware(err, req, res, next) {
+    console.color = 'red';
     console.error(`\n--- Error ---`);
     console.error(`Type: ${err.name} | Message: ${err.message}`);
 
@@ -13,6 +14,7 @@ export default function HandleErrorMiddleware(err, req, res, next) {
     } catch (dbError) {
         console.error('Failed to log error to database:', dbError);
     }
+    console.color = 'white';
     const lang = req.headers['accept-language'] || 'EN';
     res.status(statusCode).json({
         error: {

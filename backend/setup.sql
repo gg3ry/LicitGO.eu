@@ -10,10 +10,10 @@ CREATE TABLE IF NOT EXISTS users (
     email VARCHAR(100) NOT NULL UNIQUE,
     fullname VARCHAR(150) NOT NULL,
     mobile VARCHAR(15) NOT NULL UNIQUE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     last_login DATETIME,
-    gender BOOLEAN,
-    birth_date DATE,
+    gender BOOLEAN NOT NULL,
+    birth_date DATE NOT NULL,
     type ENUM('unverified', 'verified', 'admin', 'superadmin', 'suspended', 'banned', 'deleted') DEFAULT 'unverified' NOT NULL,
 );
 

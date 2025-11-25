@@ -36,6 +36,10 @@
 
     "1200": "Érvénytelen bemeneti adatok",          
     "1201": "Hiányzó kötelező mezők",
+    "1202": "Érvénytelen mező értékek",
+    "1203": "Adatbázis ütközés",
+    "1204": "Kevés érték van megadva",
+    "1205": "Túl sok érték van megadva",
 
     "1210": "Telefonszám már regisztrálva",  
     "1211": "Email már regisztrálva",
@@ -55,5 +59,5 @@
     "1302": "Fájl feltöltése sikertelen",           
     "1303": "Fájl nem található",
     "1304": "Hiba a fájl feldolgozása során"
-       
+
 }

@@ -36,6 +36,10 @@
 
     "1200": "Invalid input data",          
     "1201": "Missing required fields",
+    "1202": "Invalid field values",
+    "1203": "Database conflict",
+    "1204": "Too few values provided",
+    "1205": "Too many values provided",
 
     "1210": "Phone number already registered",  
     "1211": "Email already registered",
@@ -45,6 +49,8 @@
     "1221": "Invalid email format",
     "1222": "Invalid phone number format",    
     "1223": "Passwords do not meet requirements",
+    "1224": "Invalid usertag format",
+    "1225": "Invalid fullname format",
 
     "1230": "Verification code expired",             
     "1231": "Invalid verification code",

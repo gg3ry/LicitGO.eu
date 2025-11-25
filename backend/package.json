@@ -1,8 +1,8 @@
 {
-  "name": "backend",
-  "version": "1.0.0",
-  "description": "",
-  "main": "server.js",
+  "name": "licitgo-backend",
+  "version": "2.0.1",
+  "description": "Backend for LicitGO.eu",
+  "main": "src/server.js",
   "type": "module",
   "scripts": {
     "test": "jest"
