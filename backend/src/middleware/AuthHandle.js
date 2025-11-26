@@ -3,7 +3,7 @@ import DBconnection from '../db/connection.js';
 import handleStatus from '../lang/HandleStatus.js';
 
 export default async function SessionTokenMiddleware(req, res, next) {
-    const sessionToken = req.cookies['session_token'];
+    const sessionToken = req.cookies['session_token'] || req.signedCookies['session_token'];
     let lang = req.headers['accept-language'] || 'EN';
     if (!lang.toUpperCase().includes('EN') && !lang.toUpperCase().includes('HU')) {
         lang = 'EN';
@@ -28,7 +28,7 @@ export default async function SessionTokenMiddleware(req, res, next) {
 }
 
 export async function AdminPermissionMiddleware(req, res, next) {
-    const sessionToken = req.cookies['session_token'];
+    const sessionToken = req.cookies['session_token'] || req.signedCookies['session_token'];
     let lang = req.headers['accept-language'] || 'EN';
     if (!lang.toUpperCase().includes('EN') && !lang.toUpperCase().includes('HU')) {
         lang = 'EN';
@@ -50,7 +50,7 @@ export async function AdminPermissionMiddleware(req, res, next) {
 }
 
 export async function SuperAdminPermissionMiddleware(req, res, next) {
-    const sessionToken = req.cookies['session_token'];
+    const sessionToken = req.cookies['session_token'] || req.signedCookies['session_token'];
     let lang = req.headers['accept-language'] || 'EN';
     if (!lang.toUpperCase().includes('EN') && !lang.toUpperCase().includes('HU')) {
         lang = 'EN';
@@ -72,7 +72,7 @@ export async function SuperAdminPermissionMiddleware(req, res, next) {
 }
 
 export async function IsVerifiedMiddleware(req, res, next) {
-    const sessionToken = req.cookies['session_token'];
+    const sessionToken = req.cookies['session_token'] || req.signedCookies['session_token'];
     let lang = req.headers['accept-language'] || 'EN';
     if (!lang.toUpperCase().includes('EN') && !lang.toUpperCase().includes('HU')) {
         lang = 'EN';

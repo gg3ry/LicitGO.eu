@@ -1,7 +1,8 @@
 import dotenv from 'dotenv';
+import crypt from 'crypto';
 dotenv.config();
 export default function Configuration() {
-    const dbsettings = {
+    const config = {
         port: process.env.PORT || 3000,
         db: {
             host: process.env.DB_HOST || 'localhost',
@@ -10,10 +11,9 @@ export default function Configuration() {
             database: process.env.DB_NAME || 'licitgoeu',
             port: process.env.DB_PORT || 3306
         },
-        jwtSecret: process.env.JWT_SECRET || 'your-secret-key',
-        jwtExpiresIn: process.env.JWT_EXPIRES_IN || '1h'
+        cookieSecret: process.env.COOKIE_SECRET || crypt.randomBytes(64).toString('hex')
     };
-    return dbsettings;
+    return config;
 }
 export function emailConfig() {
     const emailSettings = {
