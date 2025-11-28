@@ -1,20 +1,16 @@
-import express from 'express';
-import handleStatus from '../../lang/HandleStatus.js';
-import DBconnection from '../../db/connection.js';
-import UseDB from '../../db/UseDB.js';
-import argon2 from 'argon2';
-import crypto from 'crypto';
+import UseDB from "../../database/UseDB.js";
+import DBconnection from "../../database/connection.js";
+import handleStatus from "../../languages/HandleStatus.js";
+import argon2 from "argon2";
+import crypto from "crypto";
 
-
-const router = express.Router();
-
-router.get('/', async (req, res) => {
+export default async (req, res) => {
     let lang = req.headers['accept-language'] || 'EN';
     const conn = await DBconnection.getConnection();
     if (!lang.toUpperCase().includes('EN') && !lang.toUpperCase().includes('HU')) {
         lang = 'EN';
     }
-    const { userinfo, password } = req.query;
+    const { userinfo, password } = req.body;
     const sql = 'SELECT id, password FROM users WHERE usertag = ? OR email = ? OR mobile = ?';
     const params = [userinfo, userinfo, userinfo];
     const rows = await UseDB(sql, params);
@@ -48,6 +44,4 @@ router.get('/', async (req, res) => {
     res.cookie('sessiontoken', sessiontoken, { httpOnly: true, expires: expiresAt });
     conn.release();
     return res.status(100).json({ message: handleStatus('100', lang) });
-});
-
-export default router;
+}

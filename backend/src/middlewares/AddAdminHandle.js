@@ -1,25 +1,25 @@
-import DBconnection from "../db/connection.js";
-import UseDB from "../db/UseDB.js";
-import handleStatus from "../lang/HandleStatus.js";
-import ObjectLength from "../util/ObjectLength.js";
-import RegexUtil from "../util/RegexUtil.js";
+import DBconnection from "../database/connection.js";
+import UseDB from "../database/UseDB.js";
+import handleStatus from "../languages/HandleStatus.js";
+import ObjectLength from "../utilities/ObjectLength.js";
+import RegexUtil from "../utilities/RegexUtil.js";
 
-export default async function RegisterMiddleware(req, res, next) {
+export default async function AddAdminMiddleware(req, res, next) {
     let lang = req.headers['accept-language'] || 'EN';
     const conn = await DBconnection.getConnection();
     if (!lang.toUpperCase().includes('EN') && !lang.toUpperCase().includes('HU')) {
         lang = 'EN';
     }
-    const { usertag, password, email, fullnamem, mobile, gender, birthdate } = req.body;
-    if (ObjectLength(req.body, 6) === -1) {
+    const { email, usertag, mobile, fullname, password, birthdate, gender } = req.body;
+    if (ObjectLength(req.body, 7) === -1) {
         conn.release();
         return res.status(400).json({ message: handleStatus('1204', lang) });
     }
-    if (ObjectLength(req.body, 6) === 1) {
+    if (ObjectLength(req.body, 7) === 1) {
         conn.release();
         return res.status(400).json({ message: handleStatus('1205', lang) });
     }
-    if (!usertag || !password || !email || !fullnamem || !mobile || !gender || !birthdate) {
+    if (!email || !usertag || !mobile || !fullname || !password || !birthdate || !gender) {
         conn.release();
         return res.status(400).json({ message: handleStatus('1201', lang) });
     }
@@ -48,21 +48,21 @@ export default async function RegisterMiddleware(req, res, next) {
     }
     if (!RegexUtil.validateEmail(email)) {
         conn.release();
-        return res.status(400).json({ message: handleStatus('1221', lang) });
+        return res.status(400).json({ message: handleStatus('1220', lang) });
     }
     if (!RegexUtil.validatePassword(password)) {
         conn.release();
-        return res.status(400).json({ message: handleStatus('1220', lang) });
+        return res.status(400).json({ message: handleStatus('1223', lang) });
     }
     if (!RegexUtil.validateUsertag(usertag)) {
         conn.release();
         return res.status(400).json({ message: handleStatus('1224', lang) });
     }
-    if (!RegexUtil.validateFullname(fullnamem)) {
+    if (!RegexUtil.validateFullname(fullname)) {
         conn.release();
         return res.status(400).json({ message: handleStatus('1225', lang) });
     }
-    if (!RegexUtil.validateMobile(mobile)) {
+    if (!RegexUtil.validatePhoneNumber(mobile)) {
         conn.release();
         return res.status(400).json({ message: handleStatus('1222', lang) });
     }
@@ -73,9 +73,14 @@ export default async function RegisterMiddleware(req, res, next) {
     if (monthDiff < 0 || (monthDiff === 0 && now.getDate() < birthDateObj.getDate())) {
         age--;
     }
-    if (age < 16) {
+    if (age < 18) {
         conn.release();
-        return res.status(400).json({ message: handleStatus('1213', lang) });
+        return res.status(400).json({ message: handleStatus('1206', lang) });
     }
+    if (age > 150) {
+        conn.release();
+        return res.status(400).json({ message: handleStatus('1206', lang) });
+    }
+    conn.release();
     next();
 }

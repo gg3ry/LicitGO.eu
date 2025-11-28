@@ -1,6 +1,6 @@
-import UseDB from '../db/UseDB.js';
-import DBconnection from '../db/connection.js';
-import handleStatus from '../lang/HandleStatus.js';
+import UseDB from '../database/UseDB.js';
+import DBconnection from '../database/connection.js';
+import handleStatus from '../languages/HandleStatus.js';
 
 export default async function SessionTokenMiddleware(req, res, next) {
     const sessionToken = req.cookies['sessiontoken'] || req.signedCookies['sessiontoken'];

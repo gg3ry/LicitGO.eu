@@ -1,10 +1,7 @@
-import handleStatus from "../../lang/HandleStatus";
-import DBconnection from "../../db/connection.js";
-import express from "express";
+import handleStatus from "../../languages/HandleStatus";
+import DBconnection from "../../database/connection.js";
 
-const router = express.Router();
-
-router.post('/', async (req, res) => {
+export default async (req, res) => {
     let lang = req.headers['accept-language'] || 'EN';
     const conn = await DBconnection.getConnection();
     if (!lang.toUpperCase().includes('EN') && !lang.toUpperCase().includes('HU')) {
@@ -17,7 +14,6 @@ router.post('/', async (req, res) => {
     }
     res.clearCookie('sessiontoken');
     conn.release();
-    return res.status(200).json({ message: handleStatus('200', lang) });
-});
-
-export default router;
+    return res.status(200).json({ message: handleStatus('200', lang)
+    });;
+}

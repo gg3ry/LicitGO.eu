@@ -1,4 +1,4 @@
-import handleStatus from "../lang/HandleStatus.js";
+import handleStatus from "../languages/HandleStatus.js";
 import ObjectLength from "../util/ObjectLength.js";
 
 function CreateCarHandleMiddleware(req, res, next) {

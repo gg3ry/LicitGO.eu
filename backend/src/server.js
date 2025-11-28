@@ -1,19 +1,23 @@
 import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
-import HandleError from './middleware/ErrorHandle.js';
-import RegisterRouter from './route/Register.js';
-import RegisterMiddleware from './middleware/RegisterHandle.js';
-import handleStatus from './lang/HandleStatus.js';
-import Config from './conf/configure.js';
-import LoginRouter from './route/auth/Login.js';
-import addAdmin from './route/admin/add.js';
-import AuthMiddleware from './middleware/AuthHandle.js';
-import AddAdminMiddleware from './middleware/AddAdminHandle.js';
-import Logout from './route/auth/Logout.js';
+
+
+import HandleError from './middlewares/ErrorHandle.js';
+import RegisterRouter from './routes/auth/Register.js';
+import RegisterMiddleware from './middlewares/RegisterHandle.js';
+import handleStatus from './languages/HandleStatus.js';
+import Config from './configs/configure.js';
+import LoginRouter from './routes/auth/Login.js';
+import AddAdminRouter from './routes/admin/AddAdmin.js';
+import AuthMiddleware from './middlewares/AuthHandle.js';
+import AddAdminMiddleware from './middlewares/AddAdminHandle.js';
+import Logout from './routes/auth/Logout.js';
+import SuspendBan from './routes/admin/SuspendBan.js';
+import ListusersRouter from './routes/admin/listusers.js';
 
 const app = express();
-const PORT = Config().port || 3030;
+const PORT = Config().port;
 
 app.use(cors());
 app.use(express.json());
@@ -29,9 +33,13 @@ app.use('/logout', Logout);
 
 
 const SuperAdminMiddleware = AuthMiddleware().SuperAdminPermissionMiddleware;
-app.use('/addadmin', [ AuthMiddleware(), SuperAdminMiddleware, AddAdminMiddleware ] , addAdmin);
+const AdminMiddleware = AuthMiddleware().AdminPermissionMiddleware;
+const IsVerifiedMiddleware = AuthMiddleware().IsVerifiedMiddleware;
+app.use('/addadmin', [ AuthMiddleware, SuperAdminMiddleware, AddAdminMiddleware ] , AddAdminRouter);
 
+app.use('/suspendban', [ AuthMiddleware, AdminMiddleware ], SuspendBan);
 
+app.use('/listusers', [ AuthMiddleware, AdminMiddleware ], ListusersRouter);
 
 
 

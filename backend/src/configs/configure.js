@@ -3,7 +3,7 @@ import crypt from 'crypto';
 dotenv.config();
 export default function Configuration() {
     const config = {
-        port: process.env.PORT || 3000,
+        port: process.env.PORT || 3030,
         db: {
             host: process.env.DB_HOST || 'localhost',
             user: process.env.DB_USER || 'root',

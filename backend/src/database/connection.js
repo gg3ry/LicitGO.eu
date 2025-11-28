@@ -1,5 +1,5 @@
 import mysql from 'mysql2/promise';
-import configuration from '../conf/configure.js';
+import configuration from '../configs/configure.js';
 
 async function initializeDatabase() {
     const config = configuration();

@@ -1,5 +1,5 @@
-import HandleStatus from "../lang/HandleStatus.js";
-import UseDB from "../db/UseDB.js";
+import HandleStatus from "../languages/HandleStatus.js";
+import UseDB from "../database/UseDB.js";
 
 export default function HandleErrorMiddleware(err, req, res, next) {
     console.color = 'red';
