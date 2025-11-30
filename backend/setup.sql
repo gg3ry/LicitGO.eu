@@ -6,10 +6,10 @@ USE licitgoeu;
 CREATE TABLE IF NOT EXISTS users (
     id INT AUTO_INCREMENT PRIMARY KEY,
     usertag VARCHAR(32) NOT NULL UNIQUE,
-    passwordhash VARCHAR(64) NOT NULL,
-    email VARCHAR(100) NOT NULL UNIQUE,
+    passwordhash VARCHAR(150) NOT NULL,
+    email VARCHAR(255) NOT NULL UNIQUE,
     fullname VARCHAR(150) NOT NULL,
-    mobile VARCHAR(15) NOT NULL UNIQUE,
+    mobile VARCHAR(255) NOT NULL UNIQUE,
     createdat TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     lastlogin DATETIME,
     gender BOOLEAN NOT NULL,
@@ -31,8 +31,8 @@ CREATE TABLE IF NOT EXISTS cars (
     modelyear INT NOT NULL,
     efficiencyHP INT NOT NULL,
     efficiencyKW INT NOT NULL,
-    engine_capacityCC INT NOT NULL,
-    fueltype ENUM('gasoline', 'diesel', 'electric', 'hybrid') DEFAULT 'gasoline' NOT NULL,
+    enginecapacityCC INT NOT NULL,
+    fueltype ENUM('gasoline', 'diesel', 'electric', 'hybrid', 'other') DEFAULT 'gasoline' NOT NULL,
     emissionsGKM INT,
     transmission ENUM('manual', 'automatic', 'semi-automatic', 'CVT', 'dual-clutch', 'other') DEFAULT 'manual' NOT NULL,
     bodytype ENUM('sedan', 'hatchback', 'SUV', 'coupe', 'convertible', 'wagon', 'van', 'truck', 'other') DEFAULT 'sedan' NOT NULL,
@@ -46,7 +46,7 @@ CREATE TABLE IF NOT EXISTS cars (
     utilityfeatures TEXT,
     safetyfeatures TEXT,
     factoryExtras TEXT,
-    ownerid INT,
+    ownerid INT NOT NULL,
     FOREIGN KEY (ownerid) REFERENCES users(id) ON DELETE CASCADE
 );
 

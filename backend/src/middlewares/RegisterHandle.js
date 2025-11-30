@@ -3,6 +3,7 @@ import UseDB from "../database/UseDB.js";
 import handleStatus from "../languages/HandleStatus.js";
 import ObjectLength from "../utilities/ObjectLength.js";
 import RegexUtil from "../utilities/RegexUtil.js";
+import { encryptString } from "../utilities/Encryption.js";
 
 export default async function RegisterMiddleware(req, res, next) {
     let lang = req.headers['accept-language'] || 'EN';
@@ -28,12 +29,15 @@ export default async function RegisterMiddleware(req, res, next) {
         conn.release();
         return res.status(409).json({ message: handleStatus('1212', lang) });
     }
-    const isEmailUsed = await UseDB('SELECT COUNT(*) AS count FROM users WHERE email = ?', [email]);
+    const encryptedEmail = encryptString(email);
+    const isEmailUsed = await UseDB('SELECT COUNT(*) AS count FROM users WHERE email = ?', [encryptedEmail]);
+    
     if (isEmailUsed[0].count > 0) {
         conn.release();
         return res.status(409).json({ message: handleStatus('1211', lang) });
     }
-    const isMobileUsed = await UseDB('SELECT COUNT(*) AS count FROM users WHERE mobile = ?', [mobile]);
+    const encryptedMobile = encryptString(mobile);
+    const isMobileUsed = await UseDB('SELECT COUNT(*) AS count FROM users WHERE mobile = ?', [encryptedMobile]);
     if (isMobileUsed[0].count > 0) {
         conn.release();
         return res.status(409).json({ message: handleStatus('1210', lang) });

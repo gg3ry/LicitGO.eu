@@ -1,15 +1,10 @@
 import UseDB from '../../database/UseDB.js';
 import DBconnection from '../../database/connection.js';
+import { decryptString } from '../../utilities/Encryption.js';
 
 
 const buildQuery = (query) => {
-    const maskedMobile = `CONCAT(REPEAT('*', LENGTH(mobile) - 4), SUBSTR(mobile, -4))`;
-
-
-    const maskedEmail = `CONCAT(SUBSTR(email, 1, 2), '...', SUBSTR(email, INSTR(email, '@') + 1))`;
-
-
-    let sql = `SELECT usertag, ${maskedEmail} AS email, fullname, type, gender, createdat, lastlogin, ${maskedMobile} AS mobile FROM users`;
+    let sql = `SELECT usertag, email, fullname, type, gender, createdat, lastlogin, mobile FROM users`;
 
     const params = [];
     const searchconditions = [];
@@ -17,8 +12,9 @@ const buildQuery = (query) => {
 
     if (query.search) {
         const searchTerm = `%${query.search}%`;
-        searchconditions.push(`(usertag LIKE ? OR email LIKE ? OR fullname LIKE ?)`);
-        params.push(searchTerm, searchTerm, searchTerm);
+
+        searchconditions.push(`(usertag LIKE ? OR fullname LIKE ?)`);
+        params.push(searchTerm, searchTerm);
     }
     if (query.type) {
         searchconditions.push('type = ?');
@@ -85,6 +81,66 @@ export default async (req, res) => {
     const fetchParams = [...baseParams, limit, offset];
 
     const users = await UseDB(fetchSql, fetchParams);
+
+    for (const u of users) {
+        try {
+            const decryptedEmail = decryptString(u.email);
+            const [localPart = '', domainPart = ''] = decryptedEmail.split('@');
+            let maskedLocal = localPart;
+            if (maskedLocal.length > 2) {
+                maskedLocal = maskedLocal.slice(0, 2) + '*'.repeat(maskedLocal.length - 2);
+            }
+            let maskedDomain = '';
+            if (domainPart) {
+                maskedDomain = domainPart.split('.').map(p => '*'.repeat(p.length)).join('.');
+            }
+            u.email = domainPart ? `${maskedLocal}@${maskedDomain}` : maskedLocal;
+        } catch (e) {
+            u.email = null;
+        }
+
+        try {
+            let decryptedMobile = String(decryptString(u.mobile));
+            decryptedMobile = decryptedMobile.replace(/[^\d+]/g, '');
+
+            let country = '';
+            let rest = decryptedMobile;
+            if (rest.startsWith('+')) {
+                const m = rest.match(/^\+(\d{1,3})/);
+                if (m) {
+                    country = '+' + m[1];
+                    rest = rest.slice(1 + m[1].length);
+                }
+            } else if (rest.startsWith('06')) {
+                country = '06';
+                rest = rest.slice(2);
+            } else if (rest.startsWith('36')) {
+                country = '+36';
+                rest = rest.slice(2);
+            }
+
+            const last4 = rest.slice(-4) || '';
+            const middleLen = Math.max(0, rest.length - 4);
+            const maskedMiddle = middleLen > 0 ? '*'.repeat(middleLen) : '';
+
+            if (country) {
+                if (maskedMiddle) {
+                    u.mobile = `${country}-${maskedMiddle}-${last4}`;
+                } else {
+                    u.mobile = `${country}-${last4}`;
+                }
+            } else {
+                if (maskedMiddle) {
+                    u.mobile = `${maskedMiddle}-${last4}`;
+                } else {
+                    u.mobile = last4;
+                }
+            }
+        } catch (e) {
+            u.mobile = null;
+        }
+    }
+
     conn.release();
     return res.status(200).json({
         users,

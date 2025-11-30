@@ -1,7 +1,8 @@
-import UseDB from "../../database/UseDB";
+import UseDB from "../../database/UseDB.js";
 import DBconnection from "../../database/connection.js";
 import handleStatus from "../../languages/HandleStatus.js";
 import argon2 from "argon2";
+import { encryptString } from "../../utilities/Encryption.js";
 
 
 export default async (req, res) => {
@@ -12,8 +13,10 @@ export default async (req, res) => {
     }
     const { email, usertag, mobile, fullname, password, birthdate, gender } = req.body;
     const hashedPassword = await argon2.hash(password);
+    const encryptedEmail = encryptString(email);
+    const encryptedMobile = encryptString(mobile);
     const sql = 'INSERT INTO users (email, usertag, mobile, fullname, password, birthdate, gender, createdat, type) VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), "admin")';
-    const params = [email, usertag, mobile, fullname, hashedPassword, birthdate, gender];
+    const params = [encryptedEmail, usertag, encryptedMobile, fullname, hashedPassword, birthdate, gender];
     const result = await UseDB(sql, params);
     if (result.affectedRows === 0) {
         conn.release();

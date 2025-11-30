@@ -11,13 +11,9 @@ export default function UploadPfpHandle(req, res, next) {
 
 	uploadPfp.single('pfp')(req, res, function (err) {
 		if (err) {
-			return res.status(400).json({ message: handleStatus('1302', lang) });
+			console.log(err);
+			next();
 		}
-
-		if (!req.file) {
-			return res.status(400).json({ message: handleStatus('1303', lang) });
-		}
-
 		const file = req.file;
 		const maxBytes = 50 * 1024 * 1024;
 

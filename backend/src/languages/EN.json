@@ -20,7 +20,7 @@
     "1003": "User not authorized",
 
     "1100": "User not found",          
-    "1101": "Incorrect password",
+    "1101": "Incorrect password or other authentication data",
     "1102": "Account suspended",
     
     "1110": "Two-factor authentication required",   
@@ -61,6 +61,11 @@
     "1301": "File size exceeds allowed limit",
     "1302": "File upload failed",           
     "1303": "File not found",
-    "1304": "Error processing file"
+    "1304": "Error processing file",
+
+    "1400": "The given field is not in number format",
+    "1401": "The given field is not in text format",
+    "1402": "The given field is not in date format",
+    "1403": "The given field is not one of the specified values"
 
 }

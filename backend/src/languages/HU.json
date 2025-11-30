@@ -20,7 +20,7 @@
     "1003": "Felhasználó nem jogosult",
 
     "1100": "Felhasználó nem található",          
-    "1101": "Helytelen jelszó",
+    "1101": "Helytelen jelszó vagy egyéb hitelesítési adat",
     "1102": "Fiók felfüggesztve",
     
     "1110": "Kétfaktoros hitelesítés szükséges",   
@@ -61,6 +61,12 @@
     "1301": "A fájl mérete meghaladja a megengedett határt",
     "1302": "Fájl feltöltése sikertelen",           
     "1303": "Fájl nem található",
-    "1304": "Hiba a fájl feldolgozása során"
+    "1304": "Hiba a fájl feldolgozása során",
+
+
+    "1400": "A megadott mező nem szám formátumú",
+    "1401": "A megadott mező nem szöveg formátumú",
+    "1402": "A megadott mező nem dátum formátumú",
+    "1403": "A megadott mező nem a megadott értékek egyike"
 
 }

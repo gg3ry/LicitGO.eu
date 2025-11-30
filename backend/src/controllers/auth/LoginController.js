@@ -3,6 +3,7 @@ import DBconnection from "../../database/connection.js";
 import handleStatus from "../../languages/HandleStatus.js";
 import argon2 from "argon2";
 import crypto from "crypto";
+import { encryptString } from "../../utilities/Encryption.js";
 
 export default async (req, res) => {
     let lang = req.headers['accept-language'] || 'EN';
@@ -12,7 +13,8 @@ export default async (req, res) => {
     }
     const { userinfo, password } = req.body;
     const sql = 'SELECT id, password FROM users WHERE usertag = ? OR email = ? OR mobile = ?';
-    const params = [userinfo, userinfo, userinfo];
+    const encryptedInfo = encryptString(String(userinfo || ''));
+    const params = [userinfo, encryptedInfo, encryptedInfo];
     const rows = await UseDB(sql, params);
     if (rows.length === 0) {
         conn.release();

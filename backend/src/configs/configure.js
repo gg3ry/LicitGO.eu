@@ -11,6 +11,11 @@ export default function Configuration() {
             database: process.env.DB_NAME || 'licitgoeu',
             port: process.env.DB_PORT || 3306
         },
+        encrypt: {
+            algorithm: process.env.ENCRYPTION_ALGORITHM || 'aes-256-cbc',
+            secretKey: process.env.ENCRYPTION_SECRET_KEY || crypt.randomBytes(32).toString('hex'),
+            keyEncoding: process.env.ENCRYPTION_KEY_ENCODING || 'hex'
+        },
         cookieSecret: process.env.COOKIE_SECRET || crypt.randomBytes(64).toString('hex')
     };
     return config;
