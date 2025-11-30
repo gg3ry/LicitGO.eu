@@ -1,2 +1,1 @@
-# LicitGO.eu Backend API
-## Overview
+# LicitGO.eu
